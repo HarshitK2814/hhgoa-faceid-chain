@@ -119,6 +119,22 @@ demo/
   input_face.jpg  # sample public-figure photo used in the recorded demo
 ```
 
+## Batch test results
+
+`scripts/batch_test.py` runs the full pipeline (face detect → search → independently re-verify
+match → hash → anchor → re-verify on-chain) over 22 public-figure photos (`demo/batch/`) on the
+local chain, and writes a row per test to
+[`out/batch_test_results.xlsx`](out/batch_test_results.xlsx) (raw data in
+`out/batch_test_results.json`). Latest run: **21/22 matched and anchored**, 1 honest "no match"
+(threshold correctly rejected a low-confidence candidate), 0 errors, average cosine similarity
+0.847 across matches. Reproduce with:
+
+```bash
+python scripts/fetch_batch_images.py   # downloads the 22 demo photos (Wikipedia)
+python scripts/batch_test.py           # runs the pipeline on all of them, local chain
+python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
+```
+
 ## Known limitations
 
 - **Similarity, not identification.** SFace cosine similarity (threshold 0.363, OpenCV's

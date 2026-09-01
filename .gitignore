@@ -4,4 +4,6 @@ __pycache__/
 .env
 out/*
 !out/.gitkeep
+!out/batch_test_results.xlsx
+!out/batch_test_results.json
 models/*.onnx
