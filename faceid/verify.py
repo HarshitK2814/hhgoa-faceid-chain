@@ -1,9 +1,16 @@
 """Independently re-verify a match record against the on-chain FaceRegistry.
 
 Usage:
-    python -m faceid.verify --chain local --record out/05_record.json
-    python -m faceid.verify --chain amoy  --record out/05_record.json
-    python -m faceid.verify --chain amoy  --record out/05_record.json --tamper
+    python -m faceid.verify --chain amoy --record out/05_record.json
+    python -m faceid.verify --chain amoy --record out/05_record.json --tamper
+
+Note: --chain local is intentionally NOT shown above. eth-tester's in-process
+EVM (see chain.py's deploy_or_load) has no state that survives past the
+Python process that created it, so running this script as a *separate*
+process against --chain local always redeploys an empty contract and
+reports "NO RECORD ON CHAIN" -- even for a valid, untampered record. That
+is expected local-chain behavior, not a tamper detection. Use --chain amoy
+for any real cross-process/cross-machine re-verification.
 
 --tamper mutates one field of the record in memory (simulating someone
 altering the "discovered data" after the fact) and re-runs verification,

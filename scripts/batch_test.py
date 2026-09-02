@@ -98,9 +98,13 @@ def run_one(image_path: pathlib.Path, chain: Chain) -> dict:
 
         # Step 4: independently confirm
         best = None
+        best_image_bytes = None
         checked = []
         for cand in candidates[:MAX_CANDIDATES]:
-            img_url = cand.get("thumbnail") or cand["link"]
+            img_url = cand.get("thumbnail")
+            if not img_url:
+                checked.append({"link": cand["link"], "cosine": None, "skipped_reason": "no_thumbnail"})
+                continue
             try:
                 resp = requests.get(img_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
                 resp.raise_for_status()
@@ -113,9 +117,12 @@ def run_one(image_path: pathlib.Path, chain: Chain) -> dict:
             checked.append({"link": cand["link"], "cosine": score})
             if score >= face.SFACE_MATCH_THRESHOLD and (best is None or score > best["cosine"]):
                 best = {**cand, "cosine": score}
+                best_image_bytes = resp.content
 
         result["candidates_checked"] = len(checked)
-        result["best_cosine"] = round(max((c["cosine"] for c in checked), default=0.0), 4)
+        result["best_cosine"] = round(
+            max((c["cosine"] for c in checked if c["cosine"] is not None), default=0.0), 4
+        )
         (work_dir / "match.json").write_text(json.dumps({"checked": checked, "match": best}, indent=2))
 
         if best is None:

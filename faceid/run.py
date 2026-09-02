@@ -108,9 +108,14 @@ def main() -> int:
     import requests
 
     best = None
+    best_image_bytes = None
     checked = []
     for cand in candidates[: args.max_candidates]:
-        img_url = cand.get("thumbnail") or cand["link"]
+        img_url = cand.get("thumbnail")
+        if not img_url:
+            log(f"  skip {cand['link']!r}: no thumbnail image URL from Lens (cannot use webpage link as an image)")
+            checked.append({"link": cand["link"], "title": cand["title"], "cosine": None, "skipped_reason": "no_thumbnail"})
+            continue
         try:
             resp = requests.get(img_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
             resp.raise_for_status()
@@ -126,12 +131,13 @@ def main() -> int:
         log(f"  {cand['link']} -> cosine={score:.3f}")
         if score >= face.SFACE_MATCH_THRESHOLD and (best is None or score > best["cosine"]):
             best = {**cand, "cosine": score}
+            best_image_bytes = resp.content
 
     match_report = {"checked": checked, "match": best}
     (OUT_DIR / "04_match.json").write_text(json.dumps(match_report, indent=2))
 
     if best is None:
-        best_score = max((c["cosine"] for c in checked), default=0.0)
+        best_score = max((c["cosine"] for c in checked if c["cosine"] is not None), default=0.0)
         log(
             f"ERROR: no candidate passed the {face.SFACE_MATCH_THRESHOLD} cosine threshold "
             f"(best={best_score:.3f}). No blockchain anchor written -- this is an honest "
@@ -143,10 +149,7 @@ def main() -> int:
 
     # ---- Step 5: build the record + anchor on-chain --------------------
     log("Step 5/5: building match record and anchoring on-chain")
-    match_image_sha = record.sha256_bytes(
-        requests.get(best.get("thumbnail") or best["link"], timeout=15,
-                     headers={"User-Agent": "Mozilla/5.0"}).content
-    )
+    match_image_sha = record.sha256_bytes(best_image_bytes)
     match_record = {
         "query_image_sha256": record.sha256_file(str(image_path)),
         "query_embedding_sha256": query_embedding_sha,
