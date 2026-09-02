@@ -44,6 +44,14 @@ Paste the `explorer_tx_url` the run printed into the browser →
 `Anchor` function call. This is a public record you don't control; anyone can pull this URL up
 independently.
 
+**4b. Show the verification certificate (15s)**
+Open `out/07_certificate.png` — the input face next to the matched image, the cosine score, the
+record hash, the tx hash, and a QR code that scans straight to the same PolygonScan tx. A
+one-glance summary of everything the last two steps just proved manually. If `PINATA_JWT` is
+configured, mention that the full record is also permanently pinned on IPFS (visible in
+`out/06_receipt.json`'s `ipfs_cid`/`ipfs_gateway_url`, and folded into the on-chain `uri` itself)
+— so even if the original post is deleted, the discovered data stays independently inspectable.
+
 **5. Independent re-verification (30s)**
 ```
 python -m faceid.verify --chain amoy --record out/05_record.json
