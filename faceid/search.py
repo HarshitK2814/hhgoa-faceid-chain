@@ -115,8 +115,35 @@ def google_lens_search(image_url: str, api_key: Optional[str] = None) -> dict[st
         params={"engine": "google_lens", "url": image_url, "api_key": api_key},
         timeout=45,
     )
-    resp.raise_for_status()
+    # NOT resp.raise_for_status(): its message embeds the full request URL,
+    # which carries api_key=<secret> as a query param. That string would end
+    # up in a traceback on screen and (via batch_test.py) in a committed
+    # results file. SerpAPI's error body is {"error": "..."} and is safe.
+    if not resp.ok:
+        raise SearchError(f"SerpAPI returned {resp.status_code}: {resp.text[:200]}")
     return resp.json()
+
+
+# search_metadata carries json_endpoint / markdown_endpoint / raw_html_file,
+# each embedding an account-scoped token that grants UNAUTHENTICATED access to
+# this account's search archive. The raw response is persisted to disk and
+# shown to judges, so strip those before writing. Everything that actually
+# proves the search was genuine and live (visual_matches, search_parameters)
+# is kept.
+_SECRET_METADATA_FIELDS = ("json_endpoint", "markdown_endpoint", "raw_html_file")
+
+
+def redact_lens_response(lens_response: dict[str, Any]) -> dict[str, Any]:
+    """Return a copy safe to persist/publish: same response minus the
+    account-scoped endpoint URLs in search_metadata.
+    """
+    redacted = dict(lens_response)
+    metadata = redacted.get("search_metadata")
+    if isinstance(metadata, dict):
+        redacted["search_metadata"] = {
+            k: v for k, v in metadata.items() if k not in _SECRET_METADATA_FIELDS
+        }
+    return redacted
 
 
 def extract_social_candidates(lens_response: dict[str, Any]) -> list[dict[str, str]]:

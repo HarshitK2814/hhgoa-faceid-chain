@@ -35,12 +35,13 @@ if sys.stdout.encoding is None or sys.stdout.encoding.lower() != "utf-8":
 if sys.stderr.encoding is None or sys.stderr.encoding.lower() != "utf-8":
     sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
 
+from . import console as console_mod
 from . import record
 from .chain import Chain
 
 
 def log(msg: str) -> None:
-    print(f"[verify] {msg}", file=sys.stderr)
+    console_mod.log(msg, prefix="verify")
 
 
 def main() -> int:

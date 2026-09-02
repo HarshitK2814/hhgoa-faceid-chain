@@ -37,6 +37,22 @@ face photo -> detect + encode face -> reverse-image search (Google Lens) -> genu
    record file and calls the contract's `verify()` view function. A `--tamper` flag mutates one
    field first, to demonstrate that altered data no longer matches anything on-chain.
 
+## Bonus features (optional, purely additive — none required to satisfy the core pipeline)
+
+- **Verification certificate** — every run generates `out/07_certificate.png`: the input face
+  next to the matched image, the cosine score, the record hash, the tx hash, and a QR code
+  linking to the PolygonScan transaction (on `--chain local`, which has no public explorer, the
+  certificate shows a plain "local chain — no public explorer" placeholder instead).
+- **Permanent IPFS copy of the record** — if a `PINATA_JWT` is set in `.env` (free signup at
+  [pinata.cloud](https://pinata.cloud)), the full match-record JSON is pinned to IPFS and its CID
+  is folded into the on-chain `uri` (`<post url> | ipfs://<cid>`), so the discovered data stays
+  independently inspectable even if the original social post is later deleted. If unset, behavior
+  is unchanged from before this feature existed (`uri` = the post link only) — this is entirely
+  optional.
+- **Polished terminal output** — `faceid/console.py` adds `rich`-based colored panels and section
+  dividers to `run.py`/`verify.py`'s logging; the underlying plaintext content is unchanged, only
+  presentation is enhanced.
+
 ## Blockchain used
 
 **Polygon Amoy** (public EVM testnet, chain id 80002) — real transactions, viewable on
@@ -102,20 +118,24 @@ Every run writes numbered artifacts to `out/` so each step is inspectable after 
 | `03_lens_raw.json` | **the full, raw SerpAPI Google Lens response** — proof the search was genuine |
 | `04_match.json` | every candidate checked, its cosine score, and the winning match |
 | `05_record.json` | the canonical record that got hashed and anchored |
-| `06_receipt.json` | tx hash, block number, contract address, explorer link |
+| `06_receipt.json` | tx hash, block number, contract address, explorer link, IPFS CID (if pinned) |
+| `07_certificate.png` | shareable verification certificate: faces, score, hashes, QR to explorer |
 | `deployment.json` | cached contract address + ABI, reused across runs on the same chain |
 
 ## Repo layout
 
 ```
 faceid/
-  models.py   # downloads/caches the YuNet + SFace ONNX models
-  face.py     # detect_and_embed(), cosine() -- face detection + embedding
-  search.py   # upload_public_image(), google_lens_search(), extract_social_candidates()
-  record.py   # canonical JSON + keccak256 hashing
-  chain.py    # compiles FaceRegistry.sol, deploys, anchor()/verify() on local or Amoy
-  run.py      # end-to-end CLI (steps 1-5 above)
-  verify.py   # standalone re-verification CLI (+ --tamper demo)
+  models.py      # downloads/caches the YuNet + SFace ONNX models
+  face.py        # detect_and_embed(), cosine() -- face detection + embedding
+  search.py      # upload_public_image(), google_lens_search(), extract_social_candidates()
+  record.py      # canonical JSON + keccak256 hashing
+  chain.py       # compiles FaceRegistry.sol, deploys, anchor()/verify() on local or Amoy
+  run.py         # end-to-end CLI (steps 1-5 above)
+  verify.py      # standalone re-verification CLI (+ --tamper demo)
+  certificate.py # bonus: generates out/07_certificate.png
+  ipfs.py        # bonus: optional Pinata IPFS pinning of the full record
+  console.py     # bonus: shared rich console logging helpers
 contracts/
   FaceRegistry.sol
 scripts/
@@ -173,5 +193,20 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   dependency has no prebuilt Windows wheel, so `pip install -r requirements.txt` will fail to build
   it unless a compiler is available (e.g. Microsoft C++ Build Tools). This only affects the local
   in-process chain — `--chain amoy` (the graded/demo path) has no such requirement.
+- **What leaves your machine, and for how long.** Each run uploads the face crop to an anonymous
+  public image host so Google Lens can fetch it by URL. catbox.moe (the first choice) has **no
+  expiry**, and nothing in this code deletes the upload afterwards — a crop of the scanned face
+  stays publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
+  search archive.
+- **The identity linkage is published permanently, and the matched person never consented.** The
+  on-chain `uri` contains the matched person's post URL, and — when IPFS pinning is enabled — the
+  pinned record additionally publishes the post title, source, image hashes, similarity score and
+  timestamp. Both a blockchain anchor and an IPFS pin are **unretractable by design**: this writes
+  a permanent, public assertion of the form *"the face in image X belongs to the person in post Y,
+  confidence 0.805"* about a third party who was never asked. That permanence is the whole point of
+  the tamper-evidence mechanism, but it is also its main ethical cost, and it applies to a real
+  person every time this is run on a real face.
 - **Ethical scope.** This is a hackathon demonstration of a face-search + verification pipeline,
-  not a surveillance tool. The demo uses a public figure's publicly available photo.
+  not a surveillance tool. The demo uses a public figure's publicly available photo. Running it on
+  a private individual would combine every limitation above — a similarity-not-identity match,
+  published permanently, without consent — and is not a use this project endorses.

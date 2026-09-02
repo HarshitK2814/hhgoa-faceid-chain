@@ -10,6 +10,10 @@ control** (Instagram, PolygonScan). That's actually more convincing than a UI wo
 - Browser: one tab ready, address bar visible.
 - Screen recorder: Windows Game Bar (`Win+G` → capture widget → record) or OBS. Record the whole
   screen or just the terminal+browser window — either is fine, task says "no editing needed."
+- **Never open `.env` on camera**, and close any editor tab showing it before you hit record. It
+  holds the wallet private key, the SerpAPI key, and (if configured) the Pinata JWT — that JWT is
+  a plain base64 JWS whose payload decodes to the account email plus its scoped key and secret,
+  and it stays valid until ~Sept 2027. A single visible frame is a lasting account compromise.
 - Have `.env` filled in (`SERPAPI_API_KEY`, `PRIVATE_KEY`, `AMOY_RPC_URL`) and confirm your Amoy
   wallet still has gas: `python -c "from web3 import Web3; w3=Web3(Web3.HTTPProvider('https://polygon-amoy-bor-rpc.publicnode.com')); print(w3.from_wei(w3.eth.get_balance('0x94edF6823d01f01A06eFD45f72DB0A5FdfF0c692'),'ether'))"`
 
@@ -43,6 +47,14 @@ Paste the `explorer_tx_url` the run printed into the browser →
 `amoy.polygonscan.com/tx/<hash>` — show Status: Success, real block number, real gas fee, the
 `Anchor` function call. This is a public record you don't control; anyone can pull this URL up
 independently.
+
+**4b. Show the verification certificate (15s)**
+Open `out/07_certificate.png` — the input face next to the matched image, the cosine score, the
+record hash, the tx hash, and a QR code that scans straight to the same PolygonScan tx. A
+one-glance summary of everything the last two steps just proved manually. If `PINATA_JWT` is
+configured, mention that the full record is also permanently pinned on IPFS (visible in
+`out/06_receipt.json`'s `ipfs_cid`/`ipfs_gateway_url`, and folded into the on-chain `uri` itself)
+— so even if the original post is deleted, the discovered data stays independently inspectable.
 
 **5. Independent re-verification (30s)**
 ```
