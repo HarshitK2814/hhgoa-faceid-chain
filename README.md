@@ -9,6 +9,11 @@ face photo -> detect + encode face -> reverse-image search (Google Lens) -> genu
            -> independently re-verify match by face embedding -> hash the record -> anchor on-chain
 ```
 
+> **Security note:** all credentials (`SERPAPI_API_KEY`, `PRIVATE_KEY`, `AMOY_RPC_URL`) live in a
+> gitignored `.env` file, never in source. The demo wallet is a disposable Polygon Amoy **testnet**
+> key generated with `scripts/new_wallet.py` — it holds no mainnet value and should never be reused
+> for a real wallet.
+
 ## What it does
 
 1. **Face detection + encoding** — [OpenCV YuNet](https://github.com/opencv/opencv_zoo/tree/main/models/face_detection_yunet)
@@ -36,8 +41,8 @@ face photo -> detect + encode face -> reverse-image search (Google Lens) -> genu
 
 **Polygon Amoy** (public EVM testnet, chain id 80002) — real transactions, viewable on
 [amoy.polygonscan.com](https://amoy.polygonscan.com). Example from this repo's own test run:
-- Deployment: [`0xDAbbe47Adbf3eebC8da431A9CE78DbbE3b243A9b`](https://amoy.polygonscan.com/address/0xDAbbe47Adbf3eebC8da431A9CE78DbbE3b243A9b)
-- Anchor tx: [`0xf53778767a791ca01e56552a0b052a99c08f7351159f2b2cefb22b4a3bc00dae`](https://amoy.polygonscan.com/tx/0xf53778767a791ca01e56552a0b052a99c08f7351159f2b2cefb22b4a3bc00dae)
+- Deployment: [`0x832298598FD7A8066C7f30ba43B38050b3Fb70F8`](https://amoy.polygonscan.com/address/0x832298598FD7A8066C7f30ba43B38050b3Fb70F8)
+- Anchor tx: [`0x77d6ee91bfc991118bbb772a397d3c97781100eaccfbd4d802b47bd458841ed8`](https://amoy.polygonscan.com/tx/0x77d6ee91bfc991118bbb772a397d3c97781100eaccfbd4d802b47bd458841ed8)
 
 A `--chain local` mode is also included: an in-process EVM ([eth-tester](https://github.com/ethereum/eth-tester))
 that needs no network access or funded wallet, used for fast development/testing of the same
@@ -127,7 +132,15 @@ local chain, and writes a row per test to
 [`out/batch_test_results.xlsx`](out/batch_test_results.xlsx) (raw data in
 `out/batch_test_results.json`). Latest run: **21/22 matched and anchored**, 1 honest "no match"
 (threshold correctly rejected a low-confidence candidate), 0 errors, average cosine similarity
-0.847 across matches. Reproduce with:
+0.847 across matches.
+
+> Note: these 22 anchors run on `--chain local` (see [Known limitations](#known-limitations))
+> and therefore exist only inside now-destroyed in-process EVM instances — they are not
+> independently checkable on a public explorer the way the single `--chain amoy` example
+> above is. This batch is evidence of pipeline *correctness/repeatability* across many faces,
+> not of *on-chain persistence* (which the Amoy example above already demonstrates).
+
+Reproduce with:
 
 ```bash
 python scripts/fetch_batch_images.py   # downloads the 22 demo photos (Wikipedia)
