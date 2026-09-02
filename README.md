@@ -169,5 +169,9 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   script invocations, so a later `verify.py` call against `--chain local` won't find a contract
   deployed in an earlier process. Use `--chain amoy` for verification that needs to survive across
   runs, machines, or time.
+- **`--chain local` needs a C/C++ compiler on Windows.** `eth-tester[py-evm]`'s `safe-pysha3`
+  dependency has no prebuilt Windows wheel, so `pip install -r requirements.txt` will fail to build
+  it unless a compiler is available (e.g. Microsoft C++ Build Tools). This only affects the local
+  in-process chain — `--chain amoy` (the graded/demo path) has no such requirement.
 - **Ethical scope.** This is a hackathon demonstration of a face-search + verification pipeline,
   not a surveillance tool. The demo uses a public figure's publicly available photo.
