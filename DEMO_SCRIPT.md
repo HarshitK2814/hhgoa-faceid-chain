@@ -10,6 +10,10 @@ control** (Instagram, PolygonScan). That's actually more convincing than a UI wo
 - Browser: one tab ready, address bar visible.
 - Screen recorder: Windows Game Bar (`Win+G` → capture widget → record) or OBS. Record the whole
   screen or just the terminal+browser window — either is fine, task says "no editing needed."
+- **Never open `.env` on camera**, and close any editor tab showing it before you hit record. It
+  holds the wallet private key, the SerpAPI key, and (if configured) the Pinata JWT — that JWT is
+  a plain base64 JWS whose payload decodes to the account email plus its scoped key and secret,
+  and it stays valid until ~Sept 2027. A single visible frame is a lasting account compromise.
 - Have `.env` filled in (`SERPAPI_API_KEY`, `PRIVATE_KEY`, `AMOY_RPC_URL`) and confirm your Amoy
   wallet still has gas: `python -c "from web3 import Web3; w3=Web3(Web3.HTTPProvider('https://polygon-amoy-bor-rpc.publicnode.com')); print(w3.from_wei(w3.eth.get_balance('0x94edF6823d01f01A06eFD45f72DB0A5FdfF0c692'),'ether'))"`
 

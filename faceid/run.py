@@ -99,9 +99,11 @@ def main() -> int:
     except search.SearchError as e:
         log(f"ERROR: {e}")
         return 1
-    (OUT_DIR / "03_lens_raw.json").write_text(json.dumps(lens_raw, indent=2))
+    (OUT_DIR / "03_lens_raw.json").write_text(
+        json.dumps(search.redact_lens_response(lens_raw), indent=2)
+    )
     candidates = search.extract_social_candidates(lens_raw)
-    log(f"  raw response saved -> out/03_lens_raw.json ({len(lens_raw.get('visual_matches', []))} total visual matches)")
+    log(f"  raw response saved -> out/03_lens_raw.json ({len(lens_raw.get('visual_matches', []) or [])} total visual matches)")
     log(f"  {len(candidates)} candidate(s) on recognized social platforms")
     if not candidates:
         log("ERROR: no social-media candidates found in search results. Stopping "
@@ -191,6 +193,7 @@ def main() -> int:
                 uri = f"{best['link']} | ipfs://{ipfs_cid}"
                 log(f"  pinned -> ipfs://{ipfs_cid}  ({ipfs.gateway_url(ipfs_cid)})")
     except Exception as e:
+        ipfs_cid = None  # don't reference a half-completed pin further down
         log(f"  WARNING: IPFS pin skipped (non-fatal): {e}")
 
     receipt = chain.anchor(rhash, uri)

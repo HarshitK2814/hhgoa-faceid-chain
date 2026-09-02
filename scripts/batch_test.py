@@ -87,7 +87,9 @@ def run_one(image_path: pathlib.Path, chain: Chain) -> dict:
 
         # Step 3: search
         lens_raw = search.google_lens_search(public_url)
-        (work_dir / "lens_raw.json").write_text(json.dumps(lens_raw, indent=2))
+        (work_dir / "lens_raw.json").write_text(
+            json.dumps(search.redact_lens_response(lens_raw), indent=2)
+        )
         result["total_visual_matches"] = len(lens_raw.get("visual_matches", []) or [])
         candidates = search.extract_social_candidates(lens_raw)
         result["social_candidates"] = len(candidates)
@@ -136,10 +138,10 @@ def run_one(image_path: pathlib.Path, chain: Chain) -> dict:
         result["best_cosine"] = round(best["cosine"], 4)
 
         # Step 5: record + anchor
-        match_image_sha = record.sha256_bytes(
-            requests.get(best.get("thumbnail") or best["link"], timeout=15,
-                         headers={"User-Agent": "Mozilla/5.0"}).content
-        )
+        # Reuse the bytes already fetched (and face-verified) in Step 4 rather
+        # than re-downloading: a second fetch is an unguarded network call and
+        # can return different bytes than the ones actually verified.
+        match_image_sha = record.sha256_bytes(best_image_bytes)
         match_record = {
             "query_image_sha256": record.sha256_file(str(image_path)),
             "matched_post_url": best["link"],
@@ -167,7 +169,11 @@ def run_one(image_path: pathlib.Path, chain: Chain) -> dict:
 
     except Exception as e:  # noqa: BLE001 -- batch runner must not die on one bad input
         result["status"] = "ERROR"
-        result["error"] = f"{type(e).__name__}: {e}"
+        # Only the exception TYPE goes into the results file: out/batch_test_results.json
+        # is deliberately un-gitignored and pushed to a public repo, and some
+        # exception messages (e.g. a requests HTTPError) can embed a request URL
+        # carrying an API key. Full detail still goes to stderr for the operator.
+        result["error"] = type(e).__name__
         traceback.print_exc(file=sys.stderr)
     finally:
         result["elapsed_seconds"] = round(time.time() - t0, 2)

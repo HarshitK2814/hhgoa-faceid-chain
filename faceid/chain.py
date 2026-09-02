@@ -11,6 +11,7 @@ import json
 import os
 import pathlib
 from typing import Any, Optional
+from urllib.parse import urlparse
 
 import solcx
 from web3 import Web3
@@ -82,7 +83,12 @@ class Chain:
             self.explorer_tx_fmt = AMOY_EXPLORER_TX
             self.explorer_addr_fmt = AMOY_EXPLORER_ADDR
             if not self.w3.is_connected():
-                raise RuntimeError(f"Could not connect to Amoy RPC at {rpc_url}")
+                # Host only, never the full URL: provider RPC URLs commonly
+                # embed an API key in the path (Alchemy/Infura), which would
+                # otherwise be printed to the terminal.
+                raise RuntimeError(
+                    f"Could not connect to Amoy RPC at {urlparse(rpc_url).netloc}"
+                )
 
         self.contract = None
         self.contract_address: Optional[str] = None
