@@ -168,6 +168,40 @@ python scripts/batch_test.py           # runs the pipeline on all of them, local
 python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
 ```
 
+## Privacy & Consent
+
+- **What data is processed and where it's stored.** The input face image is processed locally to
+  produce a crop and a 128-d embedding (`out/01_face_crop.jpg`, `out/02_embedding.json`); neither
+  the raw image nor the embedding is ever written on-chain. Only content **hashes** (sha256 of the
+  query image, of the matched image; keccak256 of the whole canonical record), the matched post's
+  public URL, a similarity score, and a timestamp go into the on-chain record — see
+  `faceid/record.py` and `contracts/FaceRegistry.sol`. If IPFS pinning is enabled, that same
+  hashes-and-metadata record (not raw biometric data) is what gets pinned.
+- **What leaves your machine, and for how long.** Each run uploads the face crop to an anonymous
+  public image host so Google Lens can fetch it by URL. catbox.moe (the first choice) has **no
+  expiry**, and nothing in this code deletes the upload afterwards — a crop of the scanned face
+  stays publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
+  search archive.
+- **The identity linkage is published permanently, and the matched person never consented.** The
+  on-chain `uri` contains the matched person's post URL, and — when IPFS pinning is enabled — the
+  pinned record additionally publishes the post title, source, image hashes, similarity score and
+  timestamp. Both a blockchain anchor and an IPFS pin are **unretractable by design**: this writes
+  a permanent, public assertion of the form *"the face in image X belongs to the person in post Y,
+  confidence 0.805"* about a third party who was never asked. That permanence is the whole point of
+  the tamper-evidence mechanism, but it is also its main ethical cost, and it applies to a real
+  person every time this is run on a real face.
+- **Consent scope of this demo.** This is a hackathon demonstration of a face-search +
+  verification pipeline, not a surveillance tool. The submitted demo recording uses a consenting
+  test subject's photo, per the task's requirement. `demo/batch/`'s 22-photo set (used only by
+  `scripts/batch_test.py` for local, non-anchored-to-a-public-chain QA of match-rate/correctness
+  across many faces — not the graded demo) uses public figures' publicly available photos instead;
+  running this pipeline on a private individual without consent would combine every limitation
+  below — a similarity-not-identity match, published permanently, without consent — and is not a
+  use this project endorses.
+- **No access-control bypasses.** The reverse-image search only ever queries public, already-
+  indexed content via SerpAPI/Google Lens; the pipeline never logs into, scrapes behind, or
+  bypasses a login wall, CAPTCHA, or paywall on any platform.
+
 ## Known limitations
 
 - **Similarity, not identification.** SFace cosine similarity (threshold 0.363, OpenCV's
@@ -193,20 +227,3 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   dependency has no prebuilt Windows wheel, so `pip install -r requirements.txt` will fail to build
   it unless a compiler is available (e.g. Microsoft C++ Build Tools). This only affects the local
   in-process chain — `--chain amoy` (the graded/demo path) has no such requirement.
-- **What leaves your machine, and for how long.** Each run uploads the face crop to an anonymous
-  public image host so Google Lens can fetch it by URL. catbox.moe (the first choice) has **no
-  expiry**, and nothing in this code deletes the upload afterwards — a crop of the scanned face
-  stays publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
-  search archive.
-- **The identity linkage is published permanently, and the matched person never consented.** The
-  on-chain `uri` contains the matched person's post URL, and — when IPFS pinning is enabled — the
-  pinned record additionally publishes the post title, source, image hashes, similarity score and
-  timestamp. Both a blockchain anchor and an IPFS pin are **unretractable by design**: this writes
-  a permanent, public assertion of the form *"the face in image X belongs to the person in post Y,
-  confidence 0.805"* about a third party who was never asked. That permanence is the whole point of
-  the tamper-evidence mechanism, but it is also its main ethical cost, and it applies to a real
-  person every time this is run on a real face.
-- **Ethical scope.** This is a hackathon demonstration of a face-search + verification pipeline,
-  not a surveillance tool. The demo uses a public figure's publicly available photo. Running it on
-  a private individual would combine every limitation above — a similarity-not-identity match,
-  published permanently, without consent — and is not a use this project endorses.
