@@ -18,13 +18,23 @@ from web3 import Web3
 from web3.middleware import ExtraDataToPOAMiddleware
 
 CONTRACTS_DIR = pathlib.Path(__file__).resolve().parent.parent / "contracts"
-DEPLOYMENT_FILE = pathlib.Path(__file__).resolve().parent.parent / "out" / "deployment.json"
+OUT_DIR = pathlib.Path(__file__).resolve().parent.parent / "out"
 SOLC_VERSION = "0.8.24"
 
 AMOY_RPC_DEFAULT = "https://polygon-amoy-bor-rpc.publicnode.com"
 AMOY_CHAIN_ID = 80002
 AMOY_EXPLORER_TX = "https://amoy.polygonscan.com/tx/{}"
 AMOY_EXPLORER_ADDR = "https://amoy.polygonscan.com/address/{}"
+
+
+def _deployment_file(mode: str) -> pathlib.Path:
+    # One cache file per chain mode -- "local" and "amoy" must never share a
+    # cache file. A --chain local rehearsal run (which always force-redeploys,
+    # see deploy_or_load) would otherwise silently overwrite the cached amoy
+    # contract address, making the next --chain amoy run think it needs to
+    # redeploy (real gas, and likely more than a low-balance wallet has) when
+    # a perfectly good contract is already live on-chain.
+    return OUT_DIR / f"deployment_{mode}.json"
 
 
 def _ensure_solc() -> None:
@@ -144,16 +154,18 @@ class Chain:
         return address
 
     def _load_cached_deployment(self) -> Optional[dict[str, Any]]:
-        if DEPLOYMENT_FILE.exists():
+        path = _deployment_file(self.mode)
+        if path.exists():
             try:
-                return json.loads(DEPLOYMENT_FILE.read_text())
+                return json.loads(path.read_text())
             except Exception:
                 return None
         return None
 
     def _save_deployment(self, address: str, abi: list) -> None:
-        DEPLOYMENT_FILE.parent.mkdir(parents=True, exist_ok=True)
-        DEPLOYMENT_FILE.write_text(
+        path = _deployment_file(self.mode)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
             json.dumps({"mode": self.mode, "address": address, "abi": abi}, indent=2)
         )
 

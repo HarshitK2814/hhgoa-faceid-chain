@@ -120,7 +120,7 @@ Every run writes numbered artifacts to `out/` so each step is inspectable after 
 | `05_record.json` | the canonical record that got hashed and anchored |
 | `06_receipt.json` | tx hash, block number, contract address, explorer link, IPFS CID (if pinned) |
 | `07_certificate.png` | shareable verification certificate: faces, score, hashes, QR to explorer |
-| `deployment.json` | cached contract address + ABI, reused across runs on the same chain |
+| `deployment_<mode>.json` | cached contract address + ABI for that chain mode, reused across runs (a separate file per mode so a `--chain local` rehearsal can never clobber the cached `--chain amoy` contract) |
 
 ## Repo layout
 
@@ -191,13 +191,15 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   the tamper-evidence mechanism, but it is also its main ethical cost, and it applies to a real
   person every time this is run on a real face.
 - **Consent scope of this demo.** This is a hackathon demonstration of a face-search +
-  verification pipeline, not a surveillance tool. The submitted demo recording uses a consenting
-  test subject's photo, per the task's requirement. `demo/batch/`'s 22-photo set (used only by
-  `scripts/batch_test.py` for local, non-anchored-to-a-public-chain QA of match-rate/correctness
-  across many faces — not the graded demo) uses public figures' publicly available photos instead;
-  running this pipeline on a private individual without consent would combine every limitation
-  below — a similarity-not-identity match, published permanently, without consent — and is not a
-  use this project endorses.
+  verification pipeline, not a surveillance tool. Both the graded demo recording
+  (`demo/input_face.jpg`) and the QA batch (`demo/batch/`, used only by `scripts/batch_test.py` for
+  local, non-anchored-to-a-public-chain match-rate/correctness testing across many faces — not the
+  graded demo) use public figures' own publicly available photos, which sidesteps the consent
+  question rather than resolving it: a public figure hasn't individually consented to *this*
+  pipeline, but their photo and public presence are already widely indexed and public by their own
+  choice/role. Running this pipeline on a private individual without their consent would combine
+  every limitation above — a similarity-not-identity match, published permanently, without consent
+  — and is not a use this project endorses.
 - **No access-control bypasses.** The reverse-image search only ever queries public, already-
   indexed content via SerpAPI/Google Lens; the pipeline never logs into, scrapes behind, or
   bypasses a login wall, CAPTCHA, or paywall on any platform.
@@ -227,3 +229,10 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   dependency has no prebuilt Windows wheel, so `pip install -r requirements.txt` will fail to build
   it unless a compiler is available (e.g. Microsoft C++ Build Tools). This only affects the local
   in-process chain — `--chain amoy` (the graded/demo path) has no such requirement.
+- **`anchor()` is intentionally permissionless.** `FaceRegistry.anchor()` has no access control —
+  anyone can call it. This is deliberate: the contract is a public commitment scheme (it proves
+  *this exact off-chain record existed at this timestamp*), not a permissioned registry of "true"
+  identities, so gatekeeping who may anchor would not add integrity — the integrity comes from the
+  hash matching a specific, independently re-derivable off-chain record. A production deployment
+  wanting to rate-limit spam anchors could add a submission fee or an allow-list; it isn't needed
+  to demonstrate the tamper-evidence mechanism this task asks for.

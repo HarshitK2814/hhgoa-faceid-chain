@@ -46,7 +46,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--force-redeploy", action="store_true",
-        help="Deploy a fresh FaceRegistry contract instead of reusing out/deployment.json",
+        help="Deploy a fresh FaceRegistry contract instead of reusing out/deployment_<mode>.json",
     )
     args = parser.parse_args()
 

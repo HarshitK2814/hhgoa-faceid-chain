@@ -76,13 +76,15 @@ writing a numbered artifact to `out/` so every step is independently inspectable
 `faceid/chain.py`'s `Chain` class wraps two very different modes:
 - `"local"`: an in-process `eth-tester` EVM. `deploy_or_load()` **always** force-redeploys in this
   mode, because eth-tester's state is purely in-memory and dies with the Python process — a cached
-  `out/deployment.json` address would never have code on a fresh instance. This is why
+  `out/deployment_local.json` address would never have code on a fresh instance. This is why
   `faceid/verify.py` run as a separate process against `--chain local` will always report "NO
   RECORD ON CHAIN" even for a valid record — expected behavior, not a bug (see the module
   docstring). `run.py` demonstrates the verify+tamper story in-process instead when `--chain local`.
 - `"amoy"`: real Polygon Amoy testnet via `AMOY_RPC_URL`/`PRIVATE_KEY`. `deploy_or_load()` reuses
-  the cached `out/deployment.json` address across runs as long as `mode` matches and the address
-  still has code on-chain — so most runs only pay anchor gas, not redeploy gas.
+  the cached `out/deployment_amoy.json` address across runs as long as the address still has code
+  on-chain — so most runs only pay anchor gas, not redeploy gas. Each mode has its own cache file
+  precisely so a `--chain local` rehearsal can never overwrite the cached `--chain amoy` contract
+  address (see `chain.py: _deployment_file()`).
 
 Both `run.py` and `scripts/batch_test.py` independently implement the same 5-step logic against
 `faceid/*` (batch_test.py doesn't import run.py) — a fix to the candidate-matching logic in one
