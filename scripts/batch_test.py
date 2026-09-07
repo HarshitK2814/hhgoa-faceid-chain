@@ -192,7 +192,13 @@ def main() -> None:
 
     chain = Chain("local")
     chain.deploy_or_load(force_new=True)
-    print(f"[batch] deployed fresh FaceRegistry at {chain.contract_address} (local chain)")
+    # Note: local mode always force-redeploys on every deploy_or_load() call
+    # (see faceid/chain.py -- eth-tester's in-memory state means a cached
+    # address is never trustworthy), so each of the images below gets its
+    # own separate FaceRegistry deployment via run_one()'s own
+    # chain.deploy_or_load() call, not this one shared contract.
+    print(f"[batch] local chain: each test image below deploys its own fresh "
+          f"FaceRegistry (local mode always redeploys)")
 
     results = []
     for i, img in enumerate(images, 1):

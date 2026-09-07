@@ -53,6 +53,8 @@ STATUS_FONT = {
 
 def main() -> None:
     results = json.loads(RESULTS_PATH.read_text())
+    if not results:
+        raise SystemExit(f"{RESULTS_PATH} contains no results -- run scripts/batch_test.py first")
 
     wb = Workbook()
 
