@@ -200,6 +200,7 @@ class Chain:
             "tx_hash": "0x" + receipt.transactionHash.hex().removeprefix("0x"),
             "block_number": receipt.blockNumber,
             "contract_address": self.contract_address,
+            "submitter": self.account,
             "status": receipt.status,
             "explorer_tx_url": self.explorer_tx_fmt.format(
                 "0x" + receipt.transactionHash.hex().removeprefix("0x")
