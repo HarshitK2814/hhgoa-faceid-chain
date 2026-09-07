@@ -178,9 +178,10 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   `faceid/record.py` and `contracts/FaceRegistry.sol`. If IPFS pinning is enabled, that same
   hashes-and-metadata record (not raw biometric data) is what gets pinned.
 - **What leaves your machine, and for how long.** Each run uploads the face crop to an anonymous
-  public image host so Google Lens can fetch it by URL. catbox.moe (the first choice) has **no
-  expiry**, and nothing in this code deletes the upload afterwards — a crop of the scanned face
-  stays publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
+  public image host so Google Lens can fetch it by URL. uguu.se (the first choice) auto-deletes
+  uploads after **3 hours**; if it falls back to catbox.moe or litterbox.catbox.moe, note that
+  catbox.moe has **no expiry** and nothing in this code deletes that upload afterwards — a crop of
+  the scanned face could stay publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
   search archive.
 - **The identity linkage is published permanently, and the matched person never consented.** The
   on-chain `uri` contains the matched person's post URL, and — when IPFS pinning is enabled — the
@@ -215,8 +216,9 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   produce "no match found" rather than a fabricated result — this is by design, not a bug.
 - **SerpAPI free tier** is rate-limited (100–250 searches/month depending on plan). Each `run.py`
   invocation uses exactly one search call.
-- **Temporary image hosting.** The face crop is uploaded to a free anonymous host (catbox.moe,
-  with tmpfiles.org/0x0.st/litterbox.catbox.moe as fallbacks) purely so Google Lens can fetch it
+- **Temporary image hosting.** The face crop is uploaded to a free anonymous host (uguu.se, with
+  catbox.moe/litterbox.catbox.moe/tmpfiles.org as fallbacks, each verified to actually serve image
+  bytes before use) purely so Google Lens can fetch it
   by URL; the on-chain record stores content hashes, not that temporary URL.
 - **Testnet, not mainnet.** Polygon Amoy has no economic finality guarantee — it demonstrates the
   tamper-evident/public-audit mechanism, not custody of real value. Swapping to a mainnet is a

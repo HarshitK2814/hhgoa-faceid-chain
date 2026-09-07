@@ -39,19 +39,54 @@ class SearchError(RuntimeError):
     pass
 
 
+def _looks_like_image(url: str) -> bool:
+    """Some free hosts return a URL that *looks* right but actually serves an
+    HTML landing/interstitial page instead of the raw file (this bit us with
+    tmpfiles.org after an upstream change). Fetch it back and check the
+    content-type before trusting it, so a broken host fails loudly here
+    instead of silently making Google Lens search against an unfetchable
+    page and return zero results.
+    """
+    try:
+        r = requests.get(url, headers={"User-Agent": UA}, timeout=15)
+        return r.ok and r.headers.get("content-type", "").startswith("image/")
+    except Exception:
+        return False
+
+
 def upload_public_image(image_path: pathlib.Path) -> str:
     """Upload an image to a free anonymous host so Google Lens can fetch it
-    by URL. Tries catbox.moe first, then tmpfiles.org, then litterbox/0x0.st.
+    by URL. Tries uguu.se first, then catbox.moe, litterbox.catbox.moe, and
+    tmpfiles.org as fallbacks.
     """
     with open(image_path, "rb") as f:
         data = f.read()
 
     attempts = [
         (
+            "uguu.se",
+            lambda: requests.post(
+                "https://uguu.se/upload.php",
+                files={"files[]": (image_path.name, data, "image/jpeg")},
+                headers={"User-Agent": UA},
+                timeout=30,
+            ).json()["files"][0]["url"],
+        ),
+        (
             "catbox.moe",
             lambda: requests.post(
                 "https://catbox.moe/user/api.php",
                 data={"reqtype": "fileupload"},
+                files={"fileToUpload": (image_path.name, data, "image/jpeg")},
+                headers={"User-Agent": UA},
+                timeout=30,
+            ).text.strip(),
+        ),
+        (
+            "litterbox.catbox.moe",
+            lambda: requests.post(
+                "https://litterbox.catbox.moe/resources/internals/api.php",
+                data={"reqtype": "fileupload", "time": "1h"},
                 files={"fileToUpload": (image_path.name, data, "image/jpeg")},
                 headers={"User-Agent": UA},
                 timeout=30,
@@ -66,34 +101,15 @@ def upload_public_image(image_path: pathlib.Path) -> str:
                 timeout=30,
             ).json()["data"]["url"].replace("tmpfiles.org/", "tmpfiles.org/dl/"),
         ),
-        (
-            "litterbox.catbox.moe",
-            lambda: requests.post(
-                "https://litterbox.catbox.moe/resources/internals/api.php",
-                data={"reqtype": "fileupload", "time": "1h"},
-                files={"fileToUpload": (image_path.name, data, "image/jpeg")},
-                headers={"User-Agent": UA},
-                timeout=30,
-            ).text.strip(),
-        ),
-        (
-            "0x0.st",
-            lambda: requests.post(
-                "https://0x0.st",
-                files={"file": (image_path.name, data, "image/jpeg")},
-                headers={"User-Agent": UA},
-                timeout=30,
-            ).text.strip(),
-        ),
     ]
 
     errors = []
     for name, attempt in attempts:
         try:
             url = attempt()
-            if url.startswith("http"):
+            if url.startswith("http") and _looks_like_image(url):
                 return url
-            errors.append(f"{name}: unexpected response {url!r}")
+            errors.append(f"{name}: response wasn't a fetchable image URL ({url!r})")
         except Exception as e:  # noqa: BLE001 -- best-effort fallback chain
             errors.append(f"{name}: {e}")
 
