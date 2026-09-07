@@ -23,6 +23,13 @@ control** (Instagram, PolygonScan). That's actually more convincing than a UI wo
 Open `demo/input_face.jpg` in an image viewer for a second, or just say out loud "this is the
 input photo, a face scan." No narration needed on faked "scanning" — the photo is the scan.
 
+*Optional, more convincing alternative:* capture the face live from your webcam instead of using
+a pre-existing file — `python -m faceid.run --webcam --chain amoy` opens a live camera preview
+with a face bounding box; press Enter/Space to capture the frame you're happy with (Esc cancels),
+and it feeds straight into the same pipeline below. Proves 100% the input wasn't pre-picked.
+Already confirmed working end-to-end on this machine/camera; still worth one rehearsal run before
+recording so you're comfortable with the keypress timing live.
+
 **2. Run the real pipeline live (60-90s)**
 ```
 python -m faceid.run --image demo/input_face.jpg --chain amoy
