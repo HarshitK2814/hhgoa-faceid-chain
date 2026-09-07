@@ -26,6 +26,7 @@ Run the full pipeline:
 ```bash
 python -m faceid.run --image demo/input_face.jpg --chain local   # free, no network chain needed
 python -m faceid.run --image demo/input_face.jpg --chain amoy    # real testnet anchor, costs gas
+python -m faceid.run --webcam --chain local                      # capture the input face live instead of --image
 ```
 
 Re-verify a previously anchored record (standalone, works any time after, from any machine — but

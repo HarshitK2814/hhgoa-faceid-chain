@@ -4,6 +4,7 @@ real matching social media post -> anchor the match on a blockchain.
 Usage:
     python -m faceid.run --image demo/input_face.jpg --chain local
     python -m faceid.run --image demo/input_face.jpg --chain amoy
+    python -m faceid.run --webcam --chain local
 """
 from __future__ import annotations
 
@@ -35,7 +36,11 @@ def log(msg: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--image", required=True, help="Path to the input face photo")
+    parser.add_argument("--image", help="Path to the input face photo")
+    parser.add_argument(
+        "--webcam", action="store_true",
+        help="Capture the input face live from the webcam instead of --image",
+    )
     parser.add_argument(
         "--chain", choices=["local", "amoy"], default="local",
         help="'local' = in-process EVM (no network needed); 'amoy' = real Polygon Amoy testnet",
@@ -50,13 +55,25 @@ def main() -> int:
     )
     args = parser.parse_args()
 
+    if bool(args.image) == bool(args.webcam):
+        log("ERROR: pass exactly one of --image or --webcam")
+        return 1
+
     load_dotenv()
     OUT_DIR.mkdir(exist_ok=True)
 
-    image_path = pathlib.Path(args.image)
-    if not image_path.exists():
-        log(f"ERROR: input image not found: {image_path}")
-        return 1
+    if args.webcam:
+        from . import webcam
+        console_mod.rule("Webcam capture")
+        image_path = webcam.capture_frame(OUT_DIR / "00_webcam_capture.jpg")
+        if image_path is None:
+            log("ERROR: webcam capture cancelled or failed.")
+            return 1
+    else:
+        image_path = pathlib.Path(args.image)
+        if not image_path.exists():
+            log(f"ERROR: input image not found: {image_path}")
+            return 1
 
     # ---- Step 1: detect + encode the query face ----------------------
     console_mod.rule("Step 1/5 — Detect + encode face")
@@ -131,6 +148,7 @@ def main() -> int:
                 cand_face = face.detect_and_embed(resp.content)
             except Exception as e:
                 log(f"  skip {cand['link']!r}: {e}")
+                checked.append({"link": cand["link"], "title": cand["title"], "cosine": None, "skipped_reason": f"fetch_error: {e}"})
                 continue
             if cand_face is None:
                 log(f"  skip {cand['link']!r}: no face detected in candidate image")
