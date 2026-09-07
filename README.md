@@ -102,6 +102,9 @@ python -m faceid.run --image demo/input_face.jpg --chain local
 # Real testnet anchor (needs SERPAPI_API_KEY + funded PRIVATE_KEY):
 python -m faceid.run --image demo/input_face.jpg --chain amoy
 
+# Capture the input face live from the webcam instead of a static file:
+python -m faceid.run --webcam --chain local
+
 # Re-verify a previously anchored record (works standalone, any time after):
 python -m faceid.verify --chain amoy --record out/05_record.json
 

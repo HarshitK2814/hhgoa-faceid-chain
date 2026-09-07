@@ -1,7 +1,8 @@
 """Face detection + embedding via OpenCV's YuNet + SFace models.
 
 Public API:
-    detect_and_embed(image_path_or_bytes) -> FaceResult | None
+    detect_and_embed(image_path_or_bytes_or_frame) -> FaceResult | None
+    detect_faces(frame) -> raw YuNet faces array | None  -- fast, no embedding
     cosine(a, b) -> float
     SFACE_MATCH_THRESHOLD  -- OpenCV's documented default cosine threshold
 """
@@ -46,7 +47,11 @@ def _get_models():
     return _detector, _recognizer
 
 
-def _load_image(source: Union[str, pathlib.Path, bytes]) -> np.ndarray:
+def _load_image(source: Union[str, pathlib.Path, bytes, np.ndarray]) -> np.ndarray:
+    if isinstance(source, np.ndarray):
+        if source.ndim != 3 or source.shape[2] != 3 or source.size == 0:
+            raise ValueError(f"Expected a non-empty HxWx3 BGR frame, got shape {source.shape!r}")
+        return source
     if isinstance(source, (bytes, bytearray)):
         arr = np.frombuffer(source, dtype=np.uint8)
         img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
@@ -57,7 +62,25 @@ def _load_image(source: Union[str, pathlib.Path, bytes]) -> np.ndarray:
     return img
 
 
-def detect_and_embed(source: Union[str, pathlib.Path, bytes]) -> Optional[FaceResult]:
+def detect_faces(frame: np.ndarray) -> Optional[np.ndarray]:
+    """Fast, embedding-free face detection for live preview loops (e.g. a
+    webcam feed at ~30fps). Returns YuNet's raw `faces` array (rows of
+    `[x, y, w, h, <5 landmark pairs>, score]`) or None if none detected.
+
+    Deliberately skips SFace's alignCrop/feature() -- those are the
+    expensive steps `detect_and_embed()` needs for an actual match, but are
+    wasted work when all that's needed is a bounding box to draw on screen.
+    """
+    detector, _recognizer = _get_models()
+    h, w = frame.shape[:2]
+    detector.setInputSize((w, h))
+    n, faces = detector.detect(frame)
+    if faces is None or len(faces) == 0:
+        return None
+    return faces
+
+
+def detect_and_embed(source: Union[str, pathlib.Path, bytes, np.ndarray]) -> Optional[FaceResult]:
     """Detect the most confident face in an image and return its SFace embedding.
 
     Returns None if no face is detected.
