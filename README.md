@@ -58,7 +58,7 @@ face photo -> detect + encode face -> reverse-image search (Google Lens) -> genu
 **Polygon Amoy** (public EVM testnet, chain id 80002) — real transactions, viewable on
 [amoy.polygonscan.com](https://amoy.polygonscan.com). Example from this repo's own test run:
 - Deployment: [`0x832298598FD7A8066C7f30ba43B38050b3Fb70F8`](https://amoy.polygonscan.com/address/0x832298598FD7A8066C7f30ba43B38050b3Fb70F8)
-- Anchor tx: [`0x82d29e634cec42b7cab920c079caeed696d148824e96ff32d3cacfb533e1b6cd`](https://amoy.polygonscan.com/tx/0x82d29e634cec42b7cab920c079caeed696d148824e96ff32d3cacfb533e1b6cd)
+- Anchor tx: [`0xa2ab23ccfb7e7d64b86bcac7800007be263b978d8e2bff17463d957874141500`](https://amoy.polygonscan.com/tx/0xa2ab23ccfb7e7d64b86bcac7800007be263b978d8e2bff17463d957874141500)
 
 A `--chain local` mode is also included: an in-process EVM ([eth-tester](https://github.com/ethereum/eth-tester))
 that needs no network access or funded wallet, used for fast development/testing of the same
