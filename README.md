@@ -58,7 +58,7 @@ face photo -> detect + encode face -> reverse-image search (Google Lens) -> genu
 **Polygon Amoy** (public EVM testnet, chain id 80002) — real transactions, viewable on
 [amoy.polygonscan.com](https://amoy.polygonscan.com). Example from this repo's own test run:
 - Deployment: [`0x832298598FD7A8066C7f30ba43B38050b3Fb70F8`](https://amoy.polygonscan.com/address/0x832298598FD7A8066C7f30ba43B38050b3Fb70F8)
-- Anchor tx: [`0x77d6ee91bfc991118bbb772a397d3c97781100eaccfbd4d802b47bd458841ed8`](https://amoy.polygonscan.com/tx/0x77d6ee91bfc991118bbb772a397d3c97781100eaccfbd4d802b47bd458841ed8)
+- Anchor tx: [`0x82d29e634cec42b7cab920c079caeed696d148824e96ff32d3cacfb533e1b6cd`](https://amoy.polygonscan.com/tx/0x82d29e634cec42b7cab920c079caeed696d148824e96ff32d3cacfb533e1b6cd)
 
 A `--chain local` mode is also included: an in-process EVM ([eth-tester](https://github.com/ethereum/eth-tester))
 that needs no network access or funded wallet, used for fast development/testing of the same
@@ -178,9 +178,10 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   `faceid/record.py` and `contracts/FaceRegistry.sol`. If IPFS pinning is enabled, that same
   hashes-and-metadata record (not raw biometric data) is what gets pinned.
 - **What leaves your machine, and for how long.** Each run uploads the face crop to an anonymous
-  public image host so Google Lens can fetch it by URL. catbox.moe (the first choice) has **no
-  expiry**, and nothing in this code deletes the upload afterwards — a crop of the scanned face
-  stays publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
+  public image host so Google Lens can fetch it by URL. uguu.se (the first choice) auto-deletes
+  uploads after **3 hours**; if it falls back to catbox.moe or litterbox.catbox.moe, note that
+  catbox.moe has **no expiry** and nothing in this code deletes that upload afterwards — a crop of
+  the scanned face could stay publicly reachable indefinitely. The crop URL is also sent to SerpAPI and retained in its
   search archive.
 - **The identity linkage is published permanently, and the matched person never consented.** The
   on-chain `uri` contains the matched person's post URL, and — when IPFS pinning is enabled — the
@@ -215,8 +216,9 @@ python scripts/make_excel_report.py    # builds out/batch_test_results.xlsx
   produce "no match found" rather than a fabricated result — this is by design, not a bug.
 - **SerpAPI free tier** is rate-limited (100–250 searches/month depending on plan). Each `run.py`
   invocation uses exactly one search call.
-- **Temporary image hosting.** The face crop is uploaded to a free anonymous host (catbox.moe,
-  with tmpfiles.org/0x0.st/litterbox.catbox.moe as fallbacks) purely so Google Lens can fetch it
+- **Temporary image hosting.** The face crop is uploaded to a free anonymous host (uguu.se, with
+  catbox.moe/litterbox.catbox.moe/tmpfiles.org as fallbacks, each verified to actually serve image
+  bytes before use) purely so Google Lens can fetch it
   by URL; the on-chain record stores content hashes, not that temporary URL.
 - **Testnet, not mainnet.** Polygon Amoy has no economic finality guarantee — it demonstrates the
   tamper-evident/public-audit mechanism, not custody of real value. Swapping to a mainnet is a

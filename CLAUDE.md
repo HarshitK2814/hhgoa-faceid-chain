@@ -58,7 +58,8 @@ writing a numbered artifact to `out/` so every step is independently inspectable
 1. **Detect + embed** (`faceid/face.py`) — OpenCV YuNet detects the face, OpenCV SFace produces a
    128-d embedding (`SFACE_MATCH_THRESHOLD = 0.363` is the "same person" cosine cutoff used later).
 2. **Publish the crop publicly** (`faceid/search.py: upload_public_image`) — tries a chain of free
-   anonymous image hosts (catbox.moe → tmpfiles.org → litterbox → 0x0.st) since Google Lens needs
+   anonymous image hosts (uguu.se → catbox.moe → litterbox → tmpfiles.org), each verified to
+   actually serve image bytes before use, since Google Lens needs
    a public URL, not raw bytes.
 3. **Reverse-image search** (`faceid/search.py: google_lens_search` + `extract_social_candidates`)
    — a real SerpAPI Google Lens call, filtered down to a fixed allow-list of social platform hosts
