@@ -9,6 +9,7 @@ from __future__ import annotations
 import io
 import pathlib
 import textwrap
+import unicodedata
 from typing import Any, Optional
 
 import qrcode
@@ -59,6 +60,25 @@ def _fit_image(img: Image.Image, box: int) -> Image.Image:
 
 def _draw_card(draw: ImageDraw.ImageDraw, xy: tuple[int, int, int, int]) -> None:
     draw.rounded_rectangle(xy, radius=12, fill=CARD_BG, outline=BORDER, width=2)
+
+
+def _sanitize_text(s: str) -> str:
+    """Strip characters the loaded font (Arial/DejaVu Sans) can't render --
+    emoji, symbol/dingbat blocks, CJK, control/format chars -- so external
+    text (social post titles) doesn't show up as a broken glyph box (tofu)
+    on the certificate. Keeps common curly quotes/dashes since real titles
+    often use them.
+    """
+    keep_symbols = {0x2018, 0x2019, 0x201C, 0x201D, 0x2013, 0x2014, 0x2026}
+    out = []
+    for ch in s:
+        cp = ord(ch)
+        if unicodedata.category(ch).startswith("C"):  # control/format/surrogate
+            continue
+        if cp > 0x2E7F and cp not in keep_symbols:  # symbols, emoji, CJK, etc.
+            continue
+        out.append(ch)
+    return "".join(out).strip()
 
 
 def _center_text(draw: ImageDraw.ImageDraw, cx: int, y: int, text: str, font, fill) -> None:
@@ -125,8 +145,8 @@ def generate_certificate(
         img.paste(fitted, (right_x + 12, right_y + 12))
     except Exception:
         _center_text(draw, right_x + right_box // 2, right_y + right_box // 2, "(image unavailable)", label_font, MUTED)
-    source = match_record.get("matched_post_source", "")
-    title = match_record.get("matched_post_title", "") or ""
+    source = _sanitize_text(match_record.get("matched_post_source", ""))
+    title = _sanitize_text(match_record.get("matched_post_title", "") or "")
     caption = source or "matched post"
     if title:
         caption = f"{caption} — {title[:40]}{'...' if len(title) > 40 else ''}"
